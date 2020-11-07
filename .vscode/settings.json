@@ -1,0 +1,4 @@
+{
+    "mochaExplorer.timeout": 200000,
+    "editor.formatOnSave": true
+}

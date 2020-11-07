@@ -1,0 +1,13 @@
+{
+    // See http://go.microsoft.com/fwlink/?LinkId=827846 for the documentation about the extensions.json format.
+    // These workspace extension recommendations are used with intellisense for autocomplete in various extension install UX.
+    // Less common discovery:
+    // - They will also show up in the extensions pane under the "Show Workspace Recommended Extensions" menu option.
+    "recommendations": [
+      // Extension identifier format: "<publisher>.<name>". Example: ["vscode.csharp"]
+      "CoenraadS.bracket-pair-colorizer", // help identify mismatched brackets ({[]})]
+      "esbenp.prettier-vscode", // Format your JavaScript / TypeScript / CSS using Prettier.
+      "github.vscode-pull-request-github", // Review and manage your GitHub pull requests directly in VS Code
+      "hbenl.vscode-mocha-test-adapter", // Run your Mocha tests in the Sidebar of Visual Studio Code
+    ]
+  }
