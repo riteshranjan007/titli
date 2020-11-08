@@ -8,8 +8,8 @@ class Logger {
         console.debug(msg);
     }
 
-    static error(msg){
-        console.error(msg);
+    static error(msg, error){
+        console.error(msg, error);
     }
 
 }

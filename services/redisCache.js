@@ -4,6 +4,7 @@
 
 const logger = require("utils/logger");
 const redis = require("redis");
+const asyncRedis = require("async-redis");
 
 const options = {
     port: appConfig.get("REDIS_PORT"),
@@ -41,100 +42,14 @@ const options = {
   });
   
   redisClient.on("end", function() {
-    logger.warn("Client has closed the connection");
+    logger.debug("Client has closed the connection");
   });
   
   redisClient.on("close", function() {
-    logger.warn("client has closed the connection");
+    logger.debug("client has closed the connection");
   });
   
-  /***
-   * This function is required as azure redis disconnects if the connection is not being used in less than 5 minutes
-   */
-  setInterval(function() {
-    redisClient.ping();
-  }, 60000); // 60 seconds
-  
-  const redisPing = function (callback) {
-    let success = false;
-    redisClient.set("testKey", "Redis", function (err, data) {
-      success = true;
-    });
-    setTimeout(function(){
-      // If within 1000 msec we dont get response from Redis, we will assume that redis is down.
-      if (!success) {
-        return callback(new Error('Redis timed out'));
-      } else {
-        return callback(null, "OK");
-      }
-      }, 1000);
-  };
-  
-  module.exports = {
-    redisSet: function(cacheKey, partitionId, callback) {
-      async.retry(
-        { times: RETRY_COUNT, interval: RETRY_INTERVAL },
-        function(cb) {
-          redisClient.set(cacheKey, partitionId, cb);
-        }.bind(this),
-        callback
-      );
-    },
-  
-    redisGet: function(cacheKey, callback) {
-      async.retry(
-        { times: RETRY_COUNT, interval: RETRY_INTERVAL },
-        function(cb) {
-          redisClient.get(cacheKey, cb);
-        }.bind(this),
-        callback
-      );
-    },
-  
-    redisDelete: function(cacheKey, callback) {
-      async.retry(
-        { times: RETRY_COUNT, interval: RETRY_INTERVAL },
-        function(cb) {
-          redisClient.del(cacheKey, cb);
-        }.bind(this),
-        callback
-      );
-    },
-  
-    redisBatchDelete : function (cacheKeys, callback) {
-      let redisBatch = redisClient.batch();
-  
-      for(let i=0; i<cacheKeys.length;i++){
-        redisBatch.del(cacheKeys[i])
-      }
-  
-      async.retry(
-        { times: RETRY_COUNT, interval: RETRY_INTERVAL },
-        function(cb) {
-          redisBatch.exec(cb);
-        }.bind(this),
-        callback
-      );
-    },
-  
-    redisBatchSet : function (keysValues, callback) {
-      let redisBatch = redisClient.batch();
-  
-      for(let i=0; i<keysValues.length;i++){
-        if(keysValues[i].key && keysValues[i].value) {
-          redisBatch.set(keysValues[i].key, keysValues[i].value);
-        }
-      }
-  
-      async.retry(
-        { times: RETRY_COUNT, interval: RETRY_INTERVAL },
-        function(cb) {
-          redisBatch.exec(cb);
-        }.bind(this),
-        callback
-      );
-    },
-  
-    redisPing: redisPing
-  };
+  const asyncRedisClient = asyncRedis.decorate(client);
+
+  module.exports.redisClient = asyncRedisClient;
   
