@@ -1,23 +1,21 @@
-const express = require('express');
+// INIT environment variables
 const path = require('path');
-const app = express();
-
 const ENV_FILE = path.join(__dirname, 'environments', 'local.env');
 require('dotenv').config({ path: ENV_FILE });
 
-// READ FROM ENV File
+const express = require('express');
+const routes = require('./routes/urlShotenerRoutes');
+
+const app = express();
+const bodyParser = require('body-parser');
+
+
+// Read  Configurations FROM ENV File
 const { PORT } = process.env;
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
-
-
-app.get('/:urlId', (req, res) => {
-    let urlId = req.params['urlId'];
-    console.log(`urlId = ${urlId}`);
-    res.send('Hello World!');
-  });
+//  Connect all our routes to our application
+app.use(bodyParser.json())
+app.use('/', routes);
 
 
 app.listen(PORT, () => {
