@@ -20,7 +20,6 @@ class UrlShortenerModel {
     async saveShortUrl(longUrl){
         
         const urlCode = UrlCodeGenerator.getRandomURLCode();
-        this.cache.set(urlCode, longUrl);
 
         const shortUrl  = new ShortUrl({
             _id : urlCode,
@@ -28,10 +27,14 @@ class UrlShortenerModel {
             originalUrl: longUrl
         });
         
-        shortUrl.save((err,document)=>{
-            if(err) console.log(err)
-            console.log(document)
-          })
+        try{
+            await shortUrl.save();
+        }catch(err){
+            logger.error(`Error in Saving short URL ${longUrl}`, err);
+            return;
+        }
+        
+        this.cache.set(urlCode, longUrl);
 
         return urlCode;
     }
@@ -41,7 +44,7 @@ class UrlShortenerModel {
      * @param {The short url Code} shortUrl 
      */
     async getLongUrl(urlCode){
-        let longURl = this.cache.get(urlCode);
+        let longURl = await this.cache.get(urlCode);
         if(longURl){
             return longURl;
         }
