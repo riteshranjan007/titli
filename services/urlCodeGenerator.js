@@ -1,6 +1,6 @@
 
 
-const CHARACTERS = 'abcdefghijklmnopqrstuvwxyz0123456789';
+const CHARACTERS = 'ABCDEFGHIJHKLMOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 const { URL_CODE_LENGTH } = process.env;
 const urlCodeLength = parseInt(URL_CODE_LENGTH);
 
