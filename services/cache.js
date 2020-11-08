@@ -3,7 +3,7 @@
  * This uses in-memory LRU Cache with backup as Redis Cache 
  * The in Memory cache is used for very fast resolution of urlCode to LongURL
  */
-integratconst { REDIS_ENABLED } = process.env;
+const { REDIS_ENABLED } = process.env;
 
 const LRU = require('lru-cache');
 const redisClient = require('../services/redisCache');
