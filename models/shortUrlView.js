@@ -1,3 +1,8 @@
+/**
+ * Model class to store View count in time series manner
+ * The default bucketing is hourly
+ */
+
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 

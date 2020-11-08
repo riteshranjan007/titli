@@ -3,17 +3,19 @@
  */
 
 const {Cache} = require('../services/cache');
-const {UrlCodeGenerator} = require('../services/urlCodeGenerator');
 const { logger } = require('../utils/logger');
-
 const ShortUrl = require("../models/shortUrl");
 const {AnalyticsService} = require('../services/analyticsService');
+const {CodeGeneratorService} = require('../services/CodeGeneratorService');
 
 class UrlShortenerModel {
 
     constructor() {
         this.cache = new Cache();
         this.analyticsService = new AnalyticsService();
+        this.codeGeneratorService = new CodeGeneratorService();
+        this.codeDoc = {count:0};
+        this.codeIndex=0;
     }
 
     /**
@@ -21,7 +23,7 @@ class UrlShortenerModel {
      */
     async saveShortUrl(longUrl){
         
-        const urlCode = UrlCodeGenerator.getRandomURLCode();
+        const urlCode = await this.getURLCode();
 
         const shortUrl  = new ShortUrl({
             _id : urlCode,
@@ -92,6 +94,15 @@ class UrlShortenerModel {
             last30Days:monthCount,
             last24Hr:dayCount
         };
+    }
+
+    async getURLCode(){
+        if(this.codeIndex == this.codeDoc.count){
+            this.codeDoc = await this.codeGeneratorService.getNextAvailableCodes();
+            this.codeIndex = 0;
+        }
+
+        return this.codeDoc.urlCodes[this.codeIndex++];
     }
 }
 
