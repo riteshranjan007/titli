@@ -17,15 +17,13 @@ routes.get('/', (req, res) => {
 routes.get('/:urlcode', async (req, res) => {
     const urlCode = req.params['urlcode'];
     if(!urlCode){
-      res.status(404).json({ message: 'Not found!' });
+      return res.status(404).json({ message: 'Not found!' });
     }
     const longUrl = await model.getLongUrl(urlCode);
     if(!longUrl){
-      res.status(404).json({ message: 'Not found!' });
+      return  res.status(404).json({ message: 'Not found!' });
     }
-    res.redirect(301, longUrl);
-    // Analytics tracking
-
+    return res.redirect(301, longUrl);
 });
 
 /**
@@ -56,7 +54,7 @@ routes.post('/shorturl', async (req, res) => {
     }
 
     const urlCode = await model.saveShortUrl(longUrl);
-    res.status(200).json({ 
+    return res.status(200).json({ 
           message: 'success', 
           data : {
             urlCode : urlCode, 
@@ -69,14 +67,27 @@ routes.post('/shorturl', async (req, res) => {
  * Get the analytic of number of times a short url have been called in 24hrs, 1 week, and all the time
  * sample Response:
  * {
- *  '24hr': 23,
- *  'week': 
- * }
+    "message": "success",
+    "data": {
+        "totalCount": 37,
+        "last30Days": 24,
+        "last24Hr": 16
+    }
+  }
  */
 
-routes.get('/:urlId/analytics', (req, res) => {
-  
-  
+routes.get('/:urlcode/analytics', async(req, res) => {
+    const urlCode = req.params['urlcode'];
+    const analyticsData = await model.getAnalytics(urlCode);
+    
+    if(!analyticsData){
+      return res.status(404).json({ message: 'Not found!' });
+    }
+
+    return res.status(200).json({ 
+            message: 'success', 
+            data : analyticsData
+          });
 });
   
 module.exports = routes;

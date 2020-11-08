@@ -7,11 +7,13 @@ const {UrlCodeGenerator} = require('../services/urlCodeGenerator');
 const { logger } = require('../utils/logger');
 
 const ShortUrl = require("../models/shortUrl");
+const {AnalyticsService} = require('../services/analyticsService');
 
 class UrlShortenerModel {
 
     constructor() {
         this.cache = new Cache();
+        this.analyticsService = new AnalyticsService();
     }
 
     /**
@@ -46,6 +48,8 @@ class UrlShortenerModel {
     async getLongUrl(urlCode){
         let longURl = await this.cache.get(urlCode);
         if(longURl){
+            // Update analytics
+            this.analyticsService.trackUrlView(urlCode);
             return longURl;
         }
         // If not found in cache try finding in MongoDB
@@ -61,8 +65,33 @@ class UrlShortenerModel {
         }
         // Save into cache
         this.cache.set(urlCode, doc.originalUrl);
+        // Update analytics
+        this.analyticsService.trackUrlView(urlCode);
         return doc.originalUrl;
         
+    }
+
+    async getAnalytics(urlCode){
+        let doc = {};
+        try{
+            doc = await ShortUrl.findOne({_id: urlCode}).exec();
+        } catch(err){
+            logger.error(`Error in finding long URL by urlCode ${urlCode}`, err);
+            return;
+        }
+        if(!doc || !doc.originalUrl){
+            return;
+        }
+        
+        const totalCount = await this.analyticsService.getTotalViews(urlCode);
+        const monthCount = await this.analyticsService.getLastNDaysCount(urlCode, 30);
+        const dayCount = await this.analyticsService.getLastNDaysCount(urlCode, 1);
+
+        return {
+            totalCount: totalCount,
+            last30Days:monthCount,
+            last24Hr:dayCount
+        };
     }
 }
 
