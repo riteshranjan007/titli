@@ -20,7 +20,7 @@ The implementations and design is based on following assumptions
 -   The Short URL should be both unique and short
 -   For the same URL, to different Short URL will be generated.
 -   **Analytics**: The view count hourly is sufficient to generate last 24 hr, last 30 days and total views
- 
+
 ## Tech Stack
 
 The system is implemented using NodeJS
@@ -28,9 +28,10 @@ The system is implemented using NodeJS
 `Node.js really shines in building fast, scalable network applications, offers benefits in performance, faster prototyping`
 
 #### Persistance Layer
-The Data being stored does not need to have ACID Trancaction and no relations ship is required in the entities, we can go with NoSQL. 
 
-This system is implemented using MongoDB as it is matches our requirement of High Scale and and High Availability. 
+The Data being stored does not need to have ACID Trancaction and no relations ship is required in the entities, we can go with NoSQL.
+
+This system is implemented using MongoDB as it is matches our requirement of High Scale and and High Availability.
 
 -   **Programming Language** : NodeJS, Express, Mongooes (Mongo ORM)
 -   **Persistance Layer** : MongoDB, Redis (Used in PROD Environment)
@@ -38,22 +39,33 @@ This system is implemented using MongoDB as it is matches our requirement of Hig
 -   **In Memory Cache**: LRU cache is used for in-memory
 
 ## System Components
+
 The System consists of 2 micro services
-- Key Generator Service (Cron Job)
-- Web Server 
+
+-   Key Generator Service (Cron Job)
+-   Web Server
 
 **Why we need different Key Generation Service?**
 Reason: To avoid collision One the option was to rely on the fact that the due to large number of Permutations possibles, it is highly likely that there will be no collision of Hashes. But as when System will get filled, it the chances of collision are high.
-- Checking the weather a key exists after generating key might cause delay in the API Response. 
 
-- To Overcome this, Key Generator Service keeps generating keys while making sure that Keys are not colliding.
-- The Generated Keys are storing as Group of 100 - 1000 in MongoDB Documents
-- When NodeJS Server starts, it reads a document and start consuming the keys. 
-- Key Generator keeps checking if the the min free keys are less than threshold, then if generate next slot of keys.
+-   Checking the weather a key exists after generating key might cause delay in the API Response.
+
+-   To Overcome this, Key Generator Service keeps generating keys while making sure that Keys are not colliding.
+-   The Generated Keys are storing as Group of 100 - 1000 in MongoDB Documents
+-   When NodeJS Server starts, it reads a document and start consuming the keys.
+-   Assuming there will be multiple instances of Web Services, service when started will start with a collection of free keys (default to 100). This value is configurable and can be tuned according to load.
+
+-   Key Generator keeps checking if the the min free keys are less than threshold, then if generate next slot of keys.
 
 Cons:
-- One the downside of this approach is this will take up lot memory in MongoDB. This can countered by generating only _N_ extra keys which can be configured based on the traffic. If we are getting 10 million Traffic Monthly, we can generate 10-20 Million extra keys only.
 
+-   One the downside of this approach is this will take up lot memory in MongoDB. This can countered by generating only _N_ extra keys which can be configured based on the traffic. If we are getting 10 million Traffic Monthly, we can generate 10-20 Million extra keys only.
+
+-   On web server failure, the range of keys used by a service can will become used. This should not happen quite often and given we have range of 56 Billion keys, we can tolerate this.
+
+#### Scope of improvement
+
+-   Since the collection of free keys have seq id, a service coordinator like - **Zoo keeper** can be used to coordination of distribution of keys among multiple services based on Range.
 
 ### URL Code length
 
@@ -70,18 +82,22 @@ _Note: The length and characters are configurable through environment variable_
 ### Storage Capacity estimations
 
 #### **Storing Mapping of Short to Long URL**
+
 Max length of Long URL - 2048 Chars -> 2kB
 Each document we can assume = 2KB + 3KB Other Data = 5KB
-Each Month we get 10 Million Req = 5KB * 10Million * 12 Month * 5 Years ~ 3TB Data in 5 years
+Each Month we get 10 Million Req = 5KB _ 10Million _ 12 Month \* 5 Years ~ 3TB Data in 5 years
 
 #### **Memory Requirement:**
+
 If we assume that we keep 20% of the URL mapping in Memory, we will be needing
 20% of 50GB -> 10GB Memory Capacity (Redis DB)
 
 ### Data Model:
+
 **Short URL to Long URL Mapping**
 
 The document to store short URL to Long URL Mapping
+
 ```JSON
 ShortUrl{
     urlCode: String,
@@ -89,7 +105,9 @@ ShortUrl{
     createdAt: Date
 }
 ```
+
 Timeseries document collection to stores view count of URL:
+
 ```JSON
 ShortUrlView {
     urlCode: String, (indexed)
@@ -97,12 +115,12 @@ ShortUrlView {
     count: Number
 }
 ```
-- The timeseries data will help in building wide range of queries.
-- For reducing number of documents, hourly 
-- Storing analytics separate from _ShortUrl_ doc will help in
-- **Future Scope**: If we limit the hourly aggregation to last 30 days only, and have seperate bucket for days and months, it will help us to reduce the number of docs per URL
-- 30days*24hrs + 12 month = 732 docs will be created per year for each URL
 
+-   The timeseries data will help in building wide range of queries.
+-   For reducing number of documents, hourly
+-   Storing analytics separate from _ShortUrl_ doc will help in
+-   **Future Scope**: If we limit the hourly aggregation to last 30 days only, and have seperate bucket for days and months, it will help us to reduce the number of docs per URL
+-   30days\*24hrs + 12 month = 732 docs will be created per year for each URL
 
 ### Performance Optimization:
 
@@ -111,7 +129,6 @@ ShortUrlView {
     -   The URL once created is never modified
 
 Based on the above assumptions, we can make use of both in-memory and distributed cache like Redis. For in-memory LRU Cache is used. This will give us protection if we are getting very heavy traffic for a viral url.
-
 
 ## Running locally
 
@@ -193,4 +210,5 @@ curl --location --request GET 'http://localhost:3000/mfhxr0/analytics'
 ```
 
 ## Recommended Architecture For Production
-![Architecture](https://i.ibb.co/GQwDsXC/Untitled-Diagram.png)
+
+![Architecture](https://i.ibb.co/DVKnh6k/short-url.png)
