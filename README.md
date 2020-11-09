@@ -19,6 +19,7 @@ The implementations and design is based on following assumptions
 -   This is backend / MT of the system and UI Server is separate
 -   The Short URL should be both unique and short
 -   For the same URL, to different Short URL will be generated.
+-   **Analytics**: The view count hourly is sufficient to generate last 24 hr, last 30 days and total views
  
 ## Tech Stack
 
@@ -68,17 +69,42 @@ _Note: The length and characters are configurable through environment variable_
 
 ### Storage Capacity estimations
 
-#### Storing Mapping of Short to Long URL 
+#### **Storing Mapping of Short to Long URL**
 Max length of Long URL - 2048 Chars -> 2kB
 Each document we can assume = 2KB + 3KB Other Data = 5KB
 Each Month we get 10 Million Req = 5KB * 10Million * 12 Month * 5 Years ~ 3TB Data in 5 years
 
-#### Memory Requirement:
+#### **Memory Requirement:**
 If we assume that we keep 20% of the URL mapping in Memory, we will be needing
 20% of 50GB -> 10GB Memory Capacity (Redis DB)
 
+### Data Model:
+**Short URL to Long URL Mapping**
 
-### Performance Optimization
+The document to store short URL to Long URL Mapping
+```JSON
+ShortUrl{
+    urlCode: String,
+    originalUrl: String,
+    createdAt: Date
+}
+```
+Timeseries document collection to stores view count of URL:
+```JSON
+ShortUrlView {
+    urlCode: String, (indexed)
+    timeStamp: { type: Date} (indexed)
+    count: Number
+}
+```
+- The timeseries data will help in building wide range of queries.
+- For reducing number of documents, hourly 
+- Storing analytics separate from _ShortUrl_ doc will help in
+- **Future Scope**: If we limit the hourly aggregation to last 30 days only, and have seperate bucket for days and months, it will help us to reduce the number of docs per URL
+- 30days*24hrs + 12 month = 732 docs will be created per year for each URL
+
+
+### Performance Optimization:
 
 -   The Assumption of the system are
     -   This will is Read heavy system
