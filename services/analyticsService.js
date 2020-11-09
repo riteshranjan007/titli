@@ -37,7 +37,7 @@ class AnalyticsService {
             {
               $group: {
                 _id: null,
-                count: { $sum: 1 }
+                count: { $sum: '$count' }
               }
             }
           ]);
@@ -59,7 +59,7 @@ class AnalyticsService {
             {
               $group: {
                 _id: null,
-                count: { $sum: 1 }
+                count: {  $sum: '$count' }
               }
             }
           ]);
